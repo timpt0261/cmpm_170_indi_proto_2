@@ -41,6 +41,17 @@ const G = {
   STOP_POS_Y: 10,
 };
 
+let lives = 1;
+let verticalAcceleration = 0;
+let horizontalAcceleration = 0;
+let squidSpawn = G.SPAWN_SQUID_RATE;
+
+// barrel var
+let speed = G.PARTICLE_VELOCITY_MIN;
+const amplitude = 15; // 15 to 50
+const frequency = 20;
+let yOffset = 30;
+
 /**
  * @typedef {{
  * pos: Vector,
@@ -58,6 +69,17 @@ const G = {
  * move: () => void
  * }} factory
  */
+
+/**
+ * @typedef {{
+ * speed:number,
+ * amplitude : number,
+ * frequnecy: number, 
+ * offset:number,
+ * calc:()=>number
+ * }} GraphParms
+ */
+
 
 class Factory {
   character;
@@ -216,25 +238,16 @@ class School extends Factory {
     let currentAngle = 0;
 
     this.objects.forEach((squid) => {
-      const isColidingWithSquids = char(this.character, squid.pos).isColliding
-        .char.b;
       const isColidingWithBarrels = char(this.character, squid.pos).isColliding
         .char.c;
 
-      // if (isColidingWithSquids) {
-      //   play("powerUp");
-      //   addScore(1);
-      //   arc(player.pos, 10, 1);
-      //   // this.spawn(player.pos);
-      //   lives++;
-      // }
-      // if (isColidingWithBarrels) {
-      //   lives--;
-      //   play("explosion");
-      //   color("red");
-      //   particle(player.pos, 10, 2);
-      //   school.objects.splice(squids.objects.indexOf(squid), 1);
-      // }
+      if (isColidingWithBarrels) {
+        lives--;
+        play("explosion");
+        color("red");
+        particle(player.pos, 10, 2);
+        school.objects.splice(squids.objects.indexOf(squid), 1);
+      }
       const offset = 2.1715 * Math.log(100 * school.objects.length);
 
       const offsetX = offset * Math.cos(currentAngle);
@@ -268,32 +281,13 @@ let water = new Water("d", "blue", G.SPAWN_WATER_RATE);
 
 options = {
   viewSize: { x: G.WIDTH, y: G.HEIGHT },
+  theme:"crt",
   isPlayingBgm: true,
   isReplayEnabled: true,
   seed: 2003,
 };
 
-options = {
-  viewSize: { x: G.WIDTH, y: G.HEIGHT },
-  isPlayingBgm: true,
-  isReplayEnabled: true,
-  seed: 2003,
-};
-
-let lives = 1;
-let verticalAcceleration = 0;
-let horizontalAcceleration = 0;
-let squidSpawn = G.SPAWN_SQUID_RATE;
-
-// barrel var
-let speed = G.PARTICLE_VELOCITY_MIN;
-const amplitude = 15; // 15 to 50
-const frequency = 20;
-let yOffset = 30;
-
-let lines = [];
 let timer = 1000;
-
 function update() {
   if (!ticks) {
     player = {
@@ -359,16 +353,15 @@ function update() {
 
   color("black");
 
-  squids.spawn(vec(300, rnd(30, 80))); // Outputs: Spawn method in Squid class
-  squids.move(); // Outputs: Move method in Squid class
+  squids.spawn(vec(300, rnd(35, 80))); // Outputs: Spawn method in Squid class
+  squids.move();
 
-  barrels.spawn(vec(320, 30)); 
+  barrels.spawn(vec(320, rnd(30, 50))); 
   barrels.move(speed, amplitude, frequency, yOffset); 
 
   water.spawn(vec(320, 30)); // Outputs: Spawn method in Barrels class
   water.move(speed, amplitude, frequency, yOffset); // Outputs: Move method in Barrels class
-  // color("blue");
-  // box(0, 30, 650, 1);
+
   handleCollision();
 
   school.move(); // Outputs: Move method in Factory class
@@ -383,7 +376,8 @@ function handleCollision() {
     text("+1", player.pos.x + 3, player.pos.y)
     arc(player.pos, 6, 1);
     school.spawn(player.pos);
-    lives++;
+    if(school.objects.length <= G.MAX_SCHOOL_LENGTH)
+      lives++;
   }
 
   const isColidingWithBarrels = char("a", player.pos).isColliding.char.c;
