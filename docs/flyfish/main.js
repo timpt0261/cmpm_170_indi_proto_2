@@ -34,7 +34,7 @@ const G = {
   MAX_SCHOOL_LENGTH: 10,
   SPAWN_WATER_RATE: 10,
   SPAWN_SQUID_RATE: 60,
-  SPAWN_BARRELS_RATE: 30, // 30 to 60
+  SPAWN_BARRELS_RATE: 60, // 30 to 60
   PARTICLE_VELOCITY_MIN: 0.5,
   PARTICLE_VELOCITY_MAX: 1.0,
   STOP_POS_X: 150,
@@ -85,7 +85,7 @@ class Factory {
       acceleration: 0,
     };
     this.objects.push(object);
-    this.rate = this.init_rate;
+    this.rate = clamp(this.init_rate - (difficulty * 1e-4), 30, this.init_rate );
   }
 
   move(speed, amplitude, frequency, yOffset) {
@@ -286,7 +286,6 @@ let horizontalAcceleration = 0;
 let squidSpawn = G.SPAWN_SQUID_RATE;
 
 // barrel var
-let barrelSpawn = G.SPAWN_BARRELS_RATE;
 let speed = G.PARTICLE_VELOCITY_MIN;
 const amplitude = 15; // 15 to 50
 const frequency = 20;
@@ -363,8 +362,8 @@ function update() {
   squids.spawn(vec(300, rnd(30, 80))); // Outputs: Spawn method in Squid class
   squids.move(); // Outputs: Move method in Squid class
 
-  // barrels.spawn(vec(320, 30)); // Outputs: Spawn method in Barrels class
-  // barrels.move(speed, amplitude, frequency, yOffset); // Outputs: Move method in Barrels class
+  barrels.spawn(vec(320, 30)); 
+  barrels.move(speed, amplitude, frequency, yOffset); 
 
   water.spawn(vec(320, 30)); // Outputs: Spawn method in Barrels class
   water.move(speed, amplitude, frequency, yOffset); // Outputs: Move method in Barrels class
@@ -375,48 +374,13 @@ function update() {
   school.move(); // Outputs: Move method in Factory class
 }
 
-// function spawnBarrels() {
-//   barrelSpawn--;
-//   if (barrelSpawn > 0) return;
-//   const y = rnd(30, 80);
-//   /**
-//    * @type  { GameObject }
-//    */
-//     const barrel = {
-//     pos: vec(300, y),
-//     velocity: G.PARTICLE_VELOCITY_MIN,
-//     acceleration: 0,
-//   };
-//   barrels.push(barrel);
-//   barrelSpawn = G.SPAWN_BARRELS_RATE;
-// }
-
-// function moveBarrels() {
-//   speed = clamp(speed + (difficulty/1000), G.PARTICLE_VELOCITY_MIN, G.PARTICLE_VELOCITY_MIN);
-
-//   barrels.forEach((barrel) => {
-//     const isOutofBounds = barrel.pos.x < 0;
-//     const isCollidingWithPlayer = char("c", barrel.pos).isColliding.char.a;
-
-//     if (isOutofBounds || isCollidingWithPlayer)
-//       barrels.splice(barrels.indexOf(barrel), 1);
-
-//     barrel.pos.x -= speed;
-//     barrel.pos.y = amplitude * cos(barrel.pos.x / frequency) + barrelYOffset;
-
-//     color("red");
-//     char("c", barrel.pos);
-
-//     color("black");
-//   });
-// }
-
 function handleCollision() {
   const isColidingWithSquids = char("a", player.pos).isColliding.char.b;
 
   if (isColidingWithSquids) {
     play("powerUp");
     addScore(1);
+    text("+1", player.pos.x + 3, player.pos.y)
     arc(player.pos, 6, 1);
     school.spawn(player.pos);
     lives++;
@@ -428,56 +392,6 @@ function handleCollision() {
     play("explosion");
     color("red");
     particle(player.pos, 10, 2);
-    // if (school.objects.length) school.objects.shift();
+    if (school.objects.length) school.objects.shift();
   }
-}
-
-function moveSchool() {
-  const angleIncrement = (2 * Math.PI) / school.objects.length; // Angle between squids
-  let currentAngle = 0;
-
-  school.objects.forEach((squid) => {
-    const isColidingWithSquids = char("a", player.pos).isColliding.char.b;
-    const isColidingWithBarrels = char("b", squid.pos).isColliding.char.c;
-
-    if (isColidingWithSquids) {
-      play("powerUp");
-      addScore(1);
-      arc(player.pos, 6, 1);
-      if (school.objects.length > G.MAX_SCHOOL_LENGTH) return;
-      /**
-       ** @type  { GameObject }
-       */
-      const squid = {
-        pos: player.pos,
-        velocity: player.velocity,
-        acceleration: 0,
-      };
-      school.objects.push(squid);
-      lives++;
-    }
-    if (isColidingWithBarrels) {
-      lives--;
-      play("explosion");
-      color("red");
-      particle(player.pos, 10, 2);
-      school.objects.splice(squids.objects.indexOf(squid), 1);
-    }
-    const offset = 2.1715 * Math.log(100 * school.objects.length);
-
-    const offsetX = offset * Math.cos(currentAngle);
-    const offsetY = offset * Math.sin(currentAngle);
-
-    // Set the squid's position to be around the player
-    squid.pos = vec(player.pos.x + offsetX, player.pos.y + offsetY);
-
-    // Update the angle for the next squid
-    currentAngle += angleIncrement;
-
-    squid.pos.angle += angleIncrement;
-
-    // Draw the squid
-    color("blue");
-    char("b", squid.pos);
-  });
 }
